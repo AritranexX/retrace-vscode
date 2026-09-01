@@ -1,0 +1,11 @@
+# Retrace System Architecture & Standards
+
+## Core Rules
+1. Strict TypeScript (no `any`, no `@ts-ignore`).
+2. Architecture separation:
+   - `src/tracker/`: Background workspace listeners (Node.js runtime).
+   - `src/storage/`: SQLite via WASM (`sql.js`) stored in `context.globalStorageUri` (never use `context.globalState` for high-frequency logs).
+   - `src/webview/`: React 19 + Tailwind CSS + Vite (bundled to `dist/webview`).
+   - `src/licensing/`: Dodo Payments direct HTTPS license validator (`https://live.dodopayments.com/licenses/activate`) cached securely in `context.secrets`.
+3. Design System: Use native VS Code CSS variables (`var(--vscode-*)`) so every theme renders natively.
+4. Testing: All storage and event parsers must pass Vitest unit tests before marking milestones complete.

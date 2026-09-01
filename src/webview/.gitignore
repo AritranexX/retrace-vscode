@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+out/
+.next/
+
+.env
+.env.*
+!.env.example
+
+*.db
+*.sqlite
+*.sqlite3
+
+.DS_Store
+
+.vscode/
