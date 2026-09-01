@@ -1,0 +1,36 @@
+name: 💡 Feature Request
+description: Suggest an improvement for Retrace
+title: "[Feature]: "
+labels:
+  - enhancement
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for Retrace?
+        Tell us what would make your development workflow better.
+
+  - type: textarea
+    id: feature
+    attributes:
+      label: What would you like Retrace to do?
+      placeholder: I would like Retrace to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      placeholder: This would help because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: How should it work?
+      placeholder: Ideally, Retrace would...
+    validations:
+      required: false
