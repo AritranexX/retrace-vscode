@@ -11,3 +11,4 @@ tailwind.config.js
 .DS_Store
 .clineignore
 .clinerules
+*.vsix
