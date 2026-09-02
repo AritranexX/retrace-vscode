@@ -1,7 +1,12 @@
 import { vi } from 'vitest';
+import * as path from 'path';
 
 export const env = {
   machineId: 'test-machine-id-12345',
+  openExternal: vi.fn(async () => true),
+  clipboard: {
+    writeText: vi.fn(async () => undefined),
+  },
 };
 
 export class Disposable {
@@ -32,6 +37,7 @@ export const window = {
   showInformationMessage: vi.fn(async (..._args: any[]) => undefined),
   showWarningMessage: vi.fn(async (..._args: any[]) => undefined),
   showErrorMessage: vi.fn(async (..._args: any[]) => undefined),
+  showSaveDialog: vi.fn(async (..._args: any[]) => undefined),
   activeTextEditor: undefined,
   visibleTextEditors: [],
 };
@@ -39,6 +45,10 @@ export const window = {
 export const workspace = {
   onDidChangeTextDocument: () => new Disposable(),
   getWorkspaceFolder: () => undefined,
+  workspaceFolders: undefined as any,
+  fs: {
+    writeFile: vi.fn(async (_uri: any, _content: Uint8Array) => undefined),
+  },
 };
 
 export class Uri {
@@ -52,8 +62,11 @@ export class Uri {
     this.path = fsPath;
     this.query = query;
   }
-  static file(path: string) {
-    return new Uri(path);
+  static file(filePath: string) {
+    return new Uri(filePath);
+  }
+  static joinPath(baseUri: Uri, ...pathSegments: string[]) {
+    return new Uri(path.join(baseUri.fsPath, ...pathSegments));
   }
   static parse(urlStr: string) {
     const url = new URL(urlStr);

@@ -1,6 +1,7 @@
-import React from 'react';
-import { Search, History, Filter, RefreshCw, Share2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, History, Filter, RefreshCw, Share2, MessageSquare } from 'lucide-react';
 import { RepoMetric } from '../../storage/types';
+import { vscodeApi } from '../vscodeApi';
 
 interface ControlsHeaderProps {
   isLoading: boolean;
@@ -13,10 +14,49 @@ interface ControlsHeaderProps {
   onOpenShare?: () => void;
 }
 
+const FEEDBACK_OPTIONS = [
+  { id: 'generalFeedback', label: 'Give Feedback', icon: '💬' },
+  { id: 'reportBug', label: 'Report a Bug', icon: '🐛' },
+  { id: 'featureRequest', label: 'Suggest a Feature', icon: '💡' },
+  { id: 'github', label: 'GitHub', icon: '⭐' },
+] as const;
+
 export const ControlsHeader: React.FC<ControlsHeaderProps> = ({
   isLoading, searchQuery, onSearchChange, selectedRepo,
   onSelectRepo, repoMetrics, onRefresh, onOpenShare
 }) => {
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isFeedbackOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsFeedbackOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFeedbackOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFeedbackOpen]);
+
+  const handleFeedbackAction = (actionId: string) => {
+    setIsFeedbackOpen(false);
+    vscodeApi.postMessage({ command: 'openFeedback', actionId });
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between pb-2 border-b border-[var(--vscode-widget-border,#333)]">
@@ -35,6 +75,43 @@ export const ControlsHeader: React.FC<ControlsHeaderProps> = ({
               <Share2 className="w-3.5 h-3.5" />
             </button>
           )}
+
+          <div className="relative inline-block" ref={menuRef}>
+            <button
+              onClick={() => setIsFeedbackOpen((prev) => !prev)}
+              className={`p-1.5 rounded hover:bg-[var(--vscode-toolbar-hoverBackground,#333)] transition-colors ${
+                isFeedbackOpen
+                  ? 'bg-[var(--vscode-toolbar-activeBackground,#444)] text-[var(--vscode-foreground,#fff)]'
+                  : 'text-[var(--vscode-descriptionForeground,#aaa)] hover:text-[var(--vscode-foreground,#fff)]'
+              }`}
+              title="Give Feedback"
+              aria-label="Give Feedback"
+              aria-expanded={isFeedbackOpen}
+              aria-haspopup="true"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+            </button>
+
+            {isFeedbackOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 w-44 py-1 bg-[var(--vscode-menu-background,#252526)] text-[var(--vscode-menu-foreground,#cccccc)] border border-[var(--vscode-menu-border,var(--vscode-widget-border,#454545))] rounded shadow-lg z-50 text-xs"
+                role="menu"
+              >
+                {FEEDBACK_OPTIONS.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleFeedbackAction(item.id)}
+                    className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-[var(--vscode-menu-selectionBackground,#04395e)] hover:text-[var(--vscode-menu-selectionForeground,#ffffff)] transition-colors"
+                    role="menuitem"
+                  >
+                    <span className="text-sm leading-none">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button onClick={onRefresh} className="p-1.5 rounded hover:bg-[var(--vscode-toolbar-hoverBackground,#333)] text-[var(--vscode-descriptionForeground,#aaa)]" title="Refresh Timeline">
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>

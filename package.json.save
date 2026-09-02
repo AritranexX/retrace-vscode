@@ -1,13 +1,10 @@
+"license": "MIT"cd "/Users/aritra_nexx/Downloads/Mark-XLVII-main/actions"
 {
   "name": "retrace-vscode",
   "displayName": "Retrace",
   "description": "Local-first VS Code extension that tracks developer workflow context, active time per file, line changes, and cursor bookmarks.",
   "version": "0.0.1",
   "publisher": "retrace",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/AritranexX/retrace-vscode.git"
-  },
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -24,7 +21,7 @@
         {
           "id": "retrace-sidebar-view",
           "title": "Retrace",
-          "icon": "Retrace.png"
+          "icon": "$(history)"
         }
       ]
     },

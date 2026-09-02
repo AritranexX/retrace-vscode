@@ -121,6 +121,17 @@ export function generateWorkflowPngDataUrl(
     ctx.fillStyle = '#94a3b8';
     ctx.fillText(col.label, cx, statsY + 16);
 
+    ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(col.val, cx, statsY + 34);
+  });
+
+  curY += statsH + 20;
+
+  renderNodesAndFooter(ctx, sequence, contentX, contentW, curY, width, privacySettings, nodeHeight, gapHeight);
+
+  return canvas.toDataURL('image/png');
+}
 
 function renderNodesAndFooter(
   ctx: CanvasRenderingContext2D,
@@ -136,68 +147,75 @@ function renderNodesAndFooter(
   const spineX = contentX + 8;
   let curY = startY;
 
-  sequence.forEach((node, idx) => {
-    const nodeY = curY;
+  if (sequence.length === 0) {
+    ctx.font = 'italic 11px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('No workflow steps recorded', contentX + 24, curY + 18);
+    curY += nodeHeight;
+  } else {
+    sequence.forEach((node, idx) => {
+      const nodeY = curY;
 
-    if (node.stepIndex === -1) {
-      ctx.font = 'italic 11px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(node.displayPath, contentX + 24, nodeY + 18);
-      curY += nodeHeight;
-      return;
-    }
+      if (node.stepIndex === -1) {
+        ctx.font = 'italic 11px system-ui, -apple-system, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(node.displayPath, contentX + 24, nodeY + 18);
+        curY += nodeHeight;
+        return;
+      }
 
-    // Spine Dot
-    ctx.fillStyle = node.isRevisited ? '#c084fc' : '#a855f7';
-    ctx.beginPath();
-    ctx.arc(spineX, nodeY + 14, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Spine Connector Line
-    if (idx < sequence.length - 1) {
-      ctx.strokeStyle = '#2e2e3e';
-      ctx.lineWidth = 1.5;
+      // Spine Dot
+      ctx.fillStyle = node.isRevisited ? '#c084fc' : '#a855f7';
       ctx.beginPath();
-      ctx.moveTo(spineX, nodeY + 20);
-      ctx.lineTo(spineX, nodeY + nodeHeight + gapHeight + 8);
+      ctx.arc(spineX, nodeY + 14, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Spine Connector Line
+      if (idx < sequence.length - 1) {
+        ctx.strokeStyle = '#2e2e3e';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(spineX, nodeY + 20);
+        ctx.lineTo(spineX, nodeY + nodeHeight + gapHeight + 8);
+        ctx.stroke();
+      }
+
+      // Node Box
+      const boxX = contentX + 24;
+      const boxW = contentW - 24;
+      const boxH = nodeHeight;
+
+      ctx.fillStyle = '#1a1a22';
+      ctx.strokeStyle = '#2e2e3e';
+      drawRoundedRect(ctx, boxX, nodeY, boxW, boxH, 6);
+      ctx.fill();
       ctx.stroke();
-    }
 
-    // Node Box
-    const boxX = contentX + 24;
-    const boxW = contentW - 24;
-    const boxH = nodeHeight;
+      // File Name & Duration
+      ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(truncateText(ctx, node.fileName, boxW - 80), boxX + 10, nodeY + 18);
 
-    ctx.fillStyle = '#1a1a22';
-    ctx.strokeStyle = '#2e2e3e';
-    drawRoundedRect(ctx, boxX, nodeY, boxW, boxH, 6);
-    ctx.fill();
-    ctx.stroke();
+      ctx.font = '11px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(formatDuration(node.durationSeconds), boxX + boxW - 55, nodeY + 18);
 
-    // File Name & Duration
-    ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(truncateText(ctx, node.fileName, boxW - 80), boxX + 10, nodeY + 18);
+      // Sub-path / Metadata
+      ctx.font = '10px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      let subInfo = truncateText(ctx, node.displayPath, boxW - 100);
 
-    ctx.font = '11px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText(formatDuration(node.durationSeconds), boxX + boxW - 55, nodeY + 18);
+      if (node.isRevisited) {
+        subInfo += ' • ↻ Revisited';
+      }
+      if (privacySettings.showLineStats && (node.linesAdded > 0 || node.linesDeleted > 0)) {
+        subInfo += ` • +${node.linesAdded}/-${node.linesDeleted}`;
+      }
+      ctx.fillText(subInfo, boxX + 10, nodeY + 34);
 
-    // Sub-path / Metadata
-    ctx.font = '10px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#94a3b8';
-    let subInfo = truncateText(ctx, node.displayPath, boxW - 100);
-
-    if (node.isRevisited) {
-      subInfo += ' • ↻ Revisited';
-    }
-    if (privacySettings.showLineStats && (node.linesAdded > 0 || node.linesDeleted > 0)) {
-      subInfo += ` • +${node.linesAdded}/-${node.linesDeleted}`;
-    }
-    ctx.fillText(subInfo, boxX + 10, nodeY + 34);
-
-    curY += nodeHeight + gapHeight;
-  });
+      curY += nodeHeight + gapHeight;
+    });
+  }
 
   curY += 12;
   ctx.font = '11px system-ui, -apple-system, sans-serif';
@@ -235,16 +253,4 @@ function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
     len--;
   }
   return text.substring(0, len) + '...';
-}
-
-    ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(col.val, cx, statsY + 34);
-  });
-
-  curY += statsH + 20;
-
-  renderNodesAndFooter(ctx, sequence, contentX, contentW, curY, width, privacySettings, nodeHeight, gapHeight);
-
-  return canvas.toDataURL('image/png');
 }

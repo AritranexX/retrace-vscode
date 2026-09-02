@@ -84,6 +84,10 @@ export class RetraceSidebarProvider implements vscode.WebviewViewProvider {
           await this.handleSaveWorkflowHtml(data.content, data.filename);
           break;
         }
+        case 'openFeedback': {
+          await this.handleOpenFeedback(data.actionId || data.action);
+          break;
+        }
       }
     });
   }
@@ -138,8 +142,13 @@ export class RetraceSidebarProvider implements vscode.WebviewViewProvider {
   private async handleSaveWorkflowPng(dataUrl: string, defaultFilename: string = 'retrace-workflow.png'): Promise<void> {
     try {
       if (!dataUrl) return;
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
+      const defaultUri = workspaceFolder
+        ? vscode.Uri.joinPath(workspaceFolder, defaultFilename)
+        : undefined;
+
       const fileUri = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file(defaultFilename),
+        defaultUri,
         filters: { 'PNG Images': ['png'] },
         saveLabel: 'Export PNG Card',
       });
@@ -147,7 +156,7 @@ export class RetraceSidebarProvider implements vscode.WebviewViewProvider {
       if (fileUri) {
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
         const buffer = Buffer.from(base64Data, 'base64');
-        await fs.promises.writeFile(fileUri.fsPath, buffer);
+        await vscode.workspace.fs.writeFile(fileUri, buffer);
         vscode.window.showInformationMessage(`Workflow PNG saved to ${path.basename(fileUri.fsPath)}`);
       }
     } catch (err: unknown) {
@@ -159,19 +168,46 @@ export class RetraceSidebarProvider implements vscode.WebviewViewProvider {
   private async handleSaveWorkflowHtml(content: string, defaultFilename: string = 'retrace-workflow.html'): Promise<void> {
     try {
       if (!content) return;
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
+      const defaultUri = workspaceFolder
+        ? vscode.Uri.joinPath(workspaceFolder, defaultFilename)
+        : undefined;
+
       const fileUri = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file(defaultFilename),
+        defaultUri,
         filters: { 'HTML Documents': ['html', 'htm'] },
-        saveLabel: 'Export HTML Workflow',
+        saveLabel: 'Save Workflow HTML',
       });
 
-      if (fileUri) {
-        await fs.promises.writeFile(fileUri.fsPath, content, 'utf8');
-        vscode.window.showInformationMessage(`Workflow HTML saved to ${path.basename(fileUri.fsPath)}`);
+      if (!fileUri) {
+        return;
       }
+
+      const encoder = new TextEncoder();
+      await vscode.workspace.fs.writeFile(fileUri, encoder.encode(content));
+      vscode.window.showInformationMessage(`Workflow HTML saved to ${path.basename(fileUri.fsPath)}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       vscode.window.showErrorMessage(`Failed to save HTML: ${msg}`);
+    }
+  }
+
+  private static readonly FEEDBACK_URLS: Record<string, string> = {
+    generalFeedback: 'https://docs.google.com/forms/d/e/1FAIpQLSeGhe0cDT1LfPdUiqXjxwY7qU9vuzKr-NXoUHQfcDv7taAW0A/viewform?usp=header',
+    reportBug: 'https://github.com/AritranexX/retrace-vscode/issues/new?template=bug_report.yml',
+    featureRequest: 'https://github.com/AritranexX/retrace-vscode/issues/new?template=feature_request.yml',
+    github: 'https://github.com/AritranexX/retrace-vscode',
+  };
+
+  private async handleOpenFeedback(actionId: string): Promise<void> {
+    const url = RetraceSidebarProvider.FEEDBACK_URLS[actionId];
+    if (url) {
+      try {
+        await vscode.env.openExternal(vscode.Uri.parse(url));
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Failed to open feedback link: ${msg}`);
+      }
     }
   }
 

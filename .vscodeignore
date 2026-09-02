@@ -1,0 +1,13 @@
+.vscode/**
+.github/**
+src/**
+licenses.json
+tsconfig.json
+vite.config.ts
+vitest.config.ts
+postcss.config.js
+tailwind.config.js
+*.vsix
+.DS_Store
+.clineignore
+.clinerules

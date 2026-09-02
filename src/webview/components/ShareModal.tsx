@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Session } from '../../storage/types';
 import { PrivacySettings, DEFAULT_PRIVACY_SETTINGS } from '../../sharing/workflowPrivacy';
 import { WorkflowScope, buildWorkflowSummary, formatDuration, getCollapsedWorkflowSequence } from '../../sharing/workflowShare';
@@ -27,11 +27,26 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, session
     return Array.from(branches);
   }, [sessions]);
 
-  const [selectedBranch] = useState<string>(availableBranches[0] || 'main');
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
+
+  const currentBranch = useMemo(() => {
+    return selectedBranch || availableBranches[0] || 'main';
+  }, [selectedBranch, availableBranches]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const summary = useMemo(() => {
-    return buildWorkflowSummary(sessions, scope, selectedBranch, privacy);
-  }, [sessions, scope, selectedBranch, privacy]);
+    return buildWorkflowSummary(sessions, scope, currentBranch, privacy);
+  }, [sessions, scope, currentBranch, privacy]);
 
   if (!isOpen) return null;
 
@@ -52,33 +67,66 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, session
 
   const handleExportPng = () => {
     const dataUrl = generateWorkflowPngDataUrl(summary, privacy);
-    const filename = `retrace-workflow-${summary.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
+    const safeTitle = (summary.title || 'workflow')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'workflow';
+    const filename = `retrace-workflow-${safeTitle}.png`;
     vscodeApi.postMessage({ command: 'saveWorkflowPNG', dataUrl, filename });
   };
 
   const handleExportHtml = () => {
     const htmlContent = generateStandaloneHtml(summary, privacy);
-    const filename = `retrace-workflow-${summary.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+    const safeTitle = (summary.title || 'workflow')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'workflow';
+    const filename = `retrace-workflow-${safeTitle}.html`;
     vscodeApi.postMessage({ command: 'saveWorkflowHTML', content: htmlContent, filename });
   };
 
   const previewSequence = getCollapsedWorkflowSequence(summary.sequence, 10);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-[#18181e] border border-[#333] rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-xs">
         <div className="flex items-center justify-between p-3 border-b border-[#2d2d38] bg-[#1f1f28]">
           <div className="flex items-center gap-2">
             <span className="p-1 rounded bg-purple-950 text-purple-400 border border-purple-800/40"><ShareIcon /></span>
             <div><h3 className="font-bold text-sm text-neutral-100">Share Workflow</h3><p className="text-[10px] text-neutral-400">Export privacy-safe visual artifact</p></div>
+          </div>
+          <button onClick={onClose} className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#2a2a38] transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="space-y-2">
             <label className="font-semibold text-purple-300 text-[11px] uppercase tracking-wider block">1. Workflow Scope</label>
             <div className="grid grid-cols-3 gap-2">
-              <button onClick={() => setScope('SESSION')} className={`p-2 rounded border text-left ${scope === 'SESSION' ? 'border-purple-500 bg-purple-950/40 text-purple-200' : 'border-[#2d2d38] bg-[#16161c] text-neutral-400'}`}><span className="font-bold text-[11px]">Current Session</span></button>
-              <button onClick={() => setScope('BRANCH')} className={`p-2 rounded border text-left ${scope === 'BRANCH' ? 'border-purple-500 bg-purple-950/40 text-purple-200' : 'border-[#2d2d38] bg-[#16161c] text-neutral-400'}`}><span className="font-bold text-[11px]">Current Branch</span></button>
-              <button onClick={() => setScope('ALL')} className={`p-2 rounded border text-left ${scope === 'ALL' ? 'border-purple-500 bg-purple-950/40 text-purple-200' : 'border-[#2d2d38] bg-[#16161c] text-neutral-400'}`}><span className="font-bold text-[11px]">All Activity</span></button>
+              <button onClick={() => setScope('SESSION')} className={`p-2 rounded border text-left transition-colors ${scope === 'SESSION' ? 'border-purple-500 bg-purple-950/40 text-purple-200' : 'border-[#2d2d38] bg-[#16161c] text-neutral-400 hover:border-neutral-600'}`}><span className="font-bold text-[11px]">Current Session</span></button>
+              <button onClick={() => setScope('BRANCH')} className={`p-2 rounded border text-left transition-colors ${scope === 'BRANCH' ? 'border-purple-500 bg-purple-950/40 text-purple-200' : 'border-[#2d2d38] bg-[#16161c] text-neutral-400 hover:border-neutral-600'}`}><span className="font-bold text-[11px]">Current Branch</span></button>
+              <button onClick={() => setScope('ALL')} className={`p-2 rounded border text-left transition-colors ${scope === 'ALL' ? 'border-purple-500 bg-purple-950/40 text-purple-200' : 'border-[#2d2d38] bg-[#16161c] text-neutral-400 hover:border-neutral-600'}`}><span className="font-bold text-[11px]">All Activity</span></button>
             </div>
+            {scope === 'BRANCH' && availableBranches.length > 1 && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] text-neutral-400">Select Branch:</span>
+                <select
+                  value={currentBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="bg-[#16161c] border border-[#2d2d38] rounded px-2 py-1 text-[11px] text-purple-200 focus:outline-none focus:border-purple-500"
+                >
+                  {availableBranches.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -104,12 +152,21 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, session
                 <div><div className="text-[9px] text-neutral-400 uppercase">Iterations</div><div className="font-bold text-white">{summary.totalIterations}</div></div>
               </div>
               <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                {previewSequence.map((node, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
-                    <div className="flex-1 bg-[#1a1a24] px-2 py-1 rounded border border-[#2a2a36] flex justify-between"><span className="font-medium text-neutral-200 truncate">{node.fileName}</span><span className="text-[10px] text-neutral-400">{formatDuration(node.durationSeconds)}</span></div>
+                {previewSequence.length === 0 ? (
+                  <div className="text-center py-2 text-neutral-500 text-[11px] italic">
+                    No activity steps in selected scope
                   </div>
-                ))}
+                ) : (
+                  previewSequence.map((node, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                      <div className="flex-1 bg-[#1a1a24] px-2 py-1 rounded border border-[#2a2a36] flex justify-between">
+                        <span className="font-medium text-neutral-200 truncate">{node.fileName}</span>
+                        <span className="text-[10px] text-neutral-400">{formatDuration(node.durationSeconds)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -123,10 +180,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, session
             <button onClick={handleExportPng} className="px-3.5 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-bold flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /><span>PNG Card</span></button>
           </div>
         </div>
-          </div>
-          <button onClick={onClose} className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#2a2a38]"><X className="w-4 h-4" /></button>
-        </div>
-        {/* BODY_CONTAINER */}
       </div>
     </div>
   );
