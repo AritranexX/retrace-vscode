@@ -2,8 +2,9 @@
   "name": "retrace-vscode",
   "displayName": "Retrace",
   "description": "Local-first VS Code extension that tracks developer workflow context, active time per file, line changes, and cursor bookmarks.",
-  "version": "0.0.1",
-  "publisher": "retrace",
+  "version": "0.0.2",
+  "publisher": "AritranexX",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/AritranexX/retrace-vscode.git"
@@ -24,7 +25,7 @@
         {
           "id": "retrace-sidebar-view",
           "title": "Retrace",
-          "icon": "Retrace.png"
+          "icon": "media/icon.png"
         }
       ]
     },
@@ -41,7 +42,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build:webview": "vite build",
-    "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:sql.js --format=cjs --platform=node && cp node_modules/sql.js/dist/sql-wasm.wasm dist/",
+    "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node && cp node_modules/sql.js/dist/sql-wasm.wasm dist/",
     "build": "npm run build:webview && npm run build:extension",
     "package": "npx vsce package --no-dependencies",
     "test": "vitest run"
@@ -64,6 +65,7 @@
     "@types/sql.js": "^1.4.9",
     "@types/vscode": "^1.85.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vscode/vsce": "^3.9.2",
     "autoprefixer": "^10.4.17",
     "esbuild": "^0.20.0",
     "postcss": "^8.4.35",

@@ -15,7 +15,7 @@ export class DatabaseManager {
   public async initialize(): Promise<void> {
     if (this.db) return;
     const wasmFilePath = this.findWasmPath();
-    const config = wasmFilePath ? { locateFile: () => wasmFilePath } : {};
+    const config = wasmFilePath ? { locateFile: (file: string) => path.join(path.dirname(wasmFilePath), file) } : {};
     this.SQL = await initSqlJs(config);
 
     if (this.dbPath) {
@@ -37,6 +37,7 @@ export class DatabaseManager {
   private findWasmPath(): string | null {
     const possiblePaths = [
       path.join(__dirname, 'sql-wasm.wasm'),
+      path.join(__dirname, '..', 'dist', 'sql-wasm.wasm'),
       path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
       path.join(__dirname, '..', '..', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
       path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm')

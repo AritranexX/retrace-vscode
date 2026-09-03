@@ -7,8 +7,8 @@ vite.config.ts
 vitest.config.ts
 postcss.config.js
 tailwind.config.js
+Retrace_1.png
 *.vsix
 .DS_Store
 .clineignore
 .clinerules
-*.vsix

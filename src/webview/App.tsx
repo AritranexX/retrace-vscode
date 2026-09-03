@@ -12,6 +12,7 @@ interface IdlePromptData {
 }
 
 export const App: React.FC = () => {
+  console.log('[RETRACE-DEBUG] App component rendering');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [repoMetrics, setRepoMetrics] = useState<RepoMetric[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | undefined>(undefined);
