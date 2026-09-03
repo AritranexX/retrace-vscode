@@ -1,6 +1,7 @@
 Retrace
 
 Local-First Context & Workflow Intelligence for VS Code
+![Retrace Demo](media/retrace-demo.gif)
 
 Retrace automatically captures how you work inside VS Code and turns your coding activity into a visual, searchable history of your development workflow.
 
